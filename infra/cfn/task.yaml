@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "ECS task for sample_github_actions_ecs_rollback"
+
+Parameters:
+
+  ProjectName:
+    Type: String
+  MyExecutionRoleArn:
+    Type: String
+  MyTaskRoleArn:
+    Type: String
+  ImageVersion:
+    Type: String
+
+
+Resources:
+  ECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Cpu: 256
+      Memory: 512
+      ExecutionRoleArn: !Ref MyExecutionRoleArn
+      TaskRoleArn: !Ref MyTaskRoleArn
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ContainerDefinitions:
+        -
+          Image: !Sub
+            - "${RepositoryUri}:${ImageVersion}"
+            - RepositoryUri: {"Fn::ImportValue": !Sub "${ProjectName}-ECRRepositoryUri"}
+          Name: !Sub "${ProjectName}-container"
+          WorkingDirectory: /app
+          Environment:
+            -
+              Name: ENV_CFN
+              Value: !Sub "This is ENV_CFN:${ImageVersion}"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ECSLogGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Ref ProjectName
+
+  ECSLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/ecs/logs/${ProjectName}"
+      RetentionInDays: 1
+
