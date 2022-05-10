@@ -43,6 +43,9 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Deploy ECS task & Log Group by CloudFormation
+        env:
+          MY_EXECUTION_ROLE_ARN: ${{ secrets.MY_EXECUTION_ROLE_ARN }}
+          MY_TASK_ROLE_ARN: ${{ secrets.MY_TASK_ROLE_ARN }}
         run: |
           ./infra/sh/02-task.sh $IMAGE_TAG
 
