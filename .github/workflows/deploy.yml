@@ -38,7 +38,7 @@ jobs:
       - name: Set ENV (check if the image tag already exists in ECR)
         run: |
           TAG_IN_ECR=$(aws ecr list-images --repository-name $ECR_REPOSITORY --query "imageIds[?imageTag=='${IMAGE_TAG}'].imageTag" --output text)
-          if [ "$TAG_IN_ECR" = '' ];
+          if [ "$TAG_IN_ECR" = '' ]; then
             echo "EXISTS_IN_ECR=false" >> $GITHUB_ENV
           fi
 
