@@ -7,6 +7,7 @@ on:
 
 env:
   AWS_REGION: ap-northeast-1
+  ECR_REPOSITORY: sample_ga_ecs_rollback/app_image
 
 jobs:
   deploy:
@@ -20,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set ENV
+      - name: Set ENV (image tag)
         run: |
           echo "IMAGE_TAG=$GITHUB_REF_NAME" >> $GITHUB_ENV
 
@@ -34,10 +35,17 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Set ENV (check if the image tag already exists in ECR)
+        run: |
+          TAG_IN_ECR=$(aws ecr list-images --repository-name $ECR_REPOSITORY --query "imageIds[?imageTag=='${IMAGE_TAG}'].imageTag" --output text)
+          if [ "$TAG_IN_ECR" = '' ];
+            echo "EXISTS_IN_ECR=false" >> $GITHUB_ENV
+          fi
+
       - name: Build, tag, and push image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sample_ga_ecs_rollback/app_image
+        if: ${{ env.EXISTS_IN_ECR == 'false' }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG code
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
